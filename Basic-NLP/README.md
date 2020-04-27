@@ -1,2 +1,7 @@
 # Hands_On_Data-Science
-This repo is about the tech stack needed to be a data scientist, it mainly focuses on the self-implementation of basic ML/DL models and their application using related python packages. It will cover contents such as baisc SQL learning, simple numpy tutorial, classic ML models all the way to modern deep learning models and the application examples on NLP, CV and recommender system.
+**Note: The content in this folder will be updated often, it's by no means the fixed final version**
+
+This folder mainly focuses on two parts:
+
+- Introduction of basic NLP techniques/models and numpy self-implementation code of basic NLP techniques and models.
+- Tutorials of how to use existing NLP libraries such as NLTK, Gensim, Spacy to do some simple tasks like text preprocessing, features derivation, word embeddings transformation, etc. 
