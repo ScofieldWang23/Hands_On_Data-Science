@@ -1,46 +1,47 @@
-<!--ts-->
-   * [<a href="#basic-deep-learning">Basic Deep Learning</a>](#basic-deep-learning)
-      * [<a href="#train-nn">Train NN</a>](#train-nn)
-         * [<a href="gradient-descent">Gradient Descent</a>](#gradient-descent)
-         * [<a href="#momentum">Momentum</a>](#momentum)
-         * [<a href="#Nesterov-Momentum">Nesterov Momentum</a>](#nesterov-momentum)
-         * [<a href="#Variable-and-Adaptive-learning-rate">Variable and Adaptive learning rate</a>](#variable-and-adaptive-learning-rate)
-            * [<a href="#Variable-learning-rate">Variable learning rate</a>](#variable-learning-rate)
-            * [<a href="#Adaptive-learning-rate">Adaptive learning rate</a>](#adaptive-learning-rate)
-            * [<a href="#RMSProp">RMSProp</a>](#rmsprop)
-            * [<a href="#Adam-Optimizer">Adam Optimizer</a>](#adam-optimizer)
-      * [<a href="#Choosing-Hyper-parameters">Choosing Hyper-parameters</a>](#choosing-hyper-parameters)
-         * [<a href="#Grid-Search">Grid Search</a>](#grid-search)
-         * [<a href="#Random-Search">Random Search</a>](#random-search)
-      * [<a href="#Weight-Initialization">Weight Initialization</a>](#weight-initialization)
-         * [<a href="#Vanishing-and-Exploding-Gradients">Vanishing and Exploding Gradients</a>](#vanishing-and-exploding-gradients)
-         * [<a href="#Weight-Initialization">Weight Initialization</a>](#weight-initialization-1)
-         * [<a href="#Local-Minimum">Local Minimum</a>](#local-minimum)
-         * [<a href="#TensorFlow-basis">TensorFlow basis</a>](#tensorflow-basis)
-            * [<a href="#Tips-of-improving-TensorFlow-famaliarity">Tips of improving TensorFlow famaliarity</a>](#tips-of-improving-tensorflow-famaliarity)
-      * [<a href="#Modern-Regularization-Techniques">Modern-Regularization-Techniques</a>](#modern-regularization-techniques)
-         * [<a href="#Dropout">Dropout</a>](#dropout)
-            * [<a href="#Dropout-Intuition">Dropout Intuition</a>](#dropout-intuition)
-         * [<a href="#Noise-Injection">Noise Injection</a>](#noise-injection)
-         * [<a href="#Summary-of-Dropout">Summary of Dropout</a>](#summary-of-dropout)
-      * [<a href="#Batch-Normalization">Batch Normalization</a>](#batch-normalization)
-         * [<a href="#Exponentially-smoothed-averages">Exponentially-smoothed averages</a>](#exponentially-smoothed-averages)
+<!-- TOC -->
 
-<!-- Added by: wsf, at: Sun May 10 22:34:36 EDT 2020 -->
+- [Basic Deep Learning](#basic-deep-learning)
+	- [Train NN](#train-nn)
+		- [Gradient Descent](#gradient-descent)
+		- [Momentum](#momentum)
+		- [Nesterov Momentum](#nesterov-momentum)
+		- [Variable and Adaptive learning rate](#variable-and-adaptive-learning-rate)
+			- [Variable learning rate](#variable-learning-rate)
+			- [Adaptive learning rate](#adaptive-learning-rate)
+			- [RMSProp](#rmsprop)
+			- [Adam Optimizer](#adam-optimizer)
+	- [Choosing Hyper-parameters](#choosing-hyper-parameters)
+		- [Grid Search](#grid-search)
+		- [Random Search](#random-search)
+	- [Weight Initialization](#weight-initialization)
+		- [Vanishing and Exploding Gradients](#vanishing-and-exploding-gradients)
+		- [Weight Initialization](#weight-initialization-1)
+		- [Local Minimum](#local-minimum)
+		- [TensorFlow basis](#tensorflow-basis)
+			- [Tips of improving TensorFlow famaliarity](#tips-of-improving-tensorflow-famaliarity)
+	- [Modern-Regularization-Techniques](#modern-regularization-techniques)
+		- [Dropout](#dropout)
+			- [Dropout Intuition](#dropout-intuition)
+		- [Noise Injection](#noise-injection)
+		- [Summary of Dropout](#summary-of-dropout)
+	- [Batch Normalization](#batch-normalization)
+		- [Exponentially-smoothed averages](#exponentially-smoothed-averages)
+		- [Batch Normalization Theory](#batch-normalization-theory)
+		- [Noise Perspective](#noise-perspective)
 
-<!--te-->
+<!-- /TOC -->
 
-# [Basic Deep Learning](#basic-deep-learning)
+# Basic Deep Learning
 This folder is mainly for holding notebooks and .py files for Deep Learning.
 
 The content below is simple introduction of some key components of Deep Learning.
 
-## [Train NN](#train-nn)
+## Train NN
 
-### [Gradient Descent](gradient-descent)
+### Gradient Descent
 Gradient Descent vs Stochastic GD vs Batch GD
 
-### [Momentum](#momentum)
+### Momentum
 **Gradient descent without momentum:**
 $$\theta_t \leftarrow \theta_{t-1} - \eta g_t$$
 
@@ -55,7 +56,7 @@ $$\theta_t \leftarrow \theta_{t-1} + v_t$$
 - typical values of $\mu$ are `0.9, 0.95, 0.99...`
 - using momentum will greatly speed up the training, model will converge faster
 
-### [Nesterov Momentum](#Nesterov-Momentum)
+### Nesterov Momentum
 **could draw on some pictures from CMU DL**
 $\eta$ is learning rate
 
@@ -69,16 +70,16 @@ $$w_t \leftarrow w_{t-1} + \mu v_t - \eta \nabla J(w_{t-1})$$
 
 In general, two momentum **have very similar performance** in terms of speed up training and loss function optimization
 
-### [Variable and Adaptive learning rate](#Variable-and-Adaptive-learning-rate)
+### Variable and Adaptive learning rate
 
-#### [Variable learning rate](#Variable-learning-rate)
+#### Variable learning rate
 
 - Learning rate is a function of time, e.g. $\eta(t)$, it should decrease with time
 	- (1) Step decay: $\eta(t) = A \times (kt+1), 0 < k < 1$
 	- (2) Exponential decay: $\eta(t) = A \times exp(kt)$
 	- (3) 1\t decay: $\eta(t) = \frac{A}{kt+1}$
 
-#### [Adaptive learning rate](#Adaptive-learning-rate)
+#### Adaptive learning rate
 
 - AdaGrad
 - Dependece of cost on each parameter is not the same, in one direction gradient might be steep, in another direction gradient might be flat
@@ -90,7 +91,7 @@ $$w_t \leftarrow w_{t-1} - \eta \frac{\nabla J}{\sqrt{cache + \epsilon}}$$
 - Typical values for $\epsilon$ is small, around $10^{-8}, 10^{-10}$
 - Each elemeny parameter is element-wsie updated independently of others
 
-#### [RMSProp](#RMSProp)
+#### RMSProp
 
 - It has been observed AdaGrad decreases learning rate too aggresively
 - Since cache is growing too fast, let's decrease it on each update:
@@ -105,7 +106,7 @@ $$cache = decay * cache + (1 - decay) * grad^2$$
 - then, your intial update(ignoring $\epsilon$) is: $\frac{\eta g}{\sqrt{0.001g^2}}$, which is quite large due to small denominator $\sqrt{0.001g^2}$
 - another solution is: initialize `cache = 1` instead, then $\Delta \theta= \eta \frac{g}{\sqrt{1 + 0.001g^2}} \approx \eta g$
 
-#### [Adam Optimizer](#Adam-Optimizer)
+#### Adam Optimizer
 
 - it's often the go-to default for modern deep learning model
 - Based on the content of [Exponentially-smoothed average](#Exponentially-smoothed-averages) talked later (``), we could see RMSProp is actually estimating *the average of the squared gradient*, that's why `RMSProp` gets its name(`RMS = "Root Mean Square"`), $cache = v(t) = decay * v_{t-1} + (1 - decay) * g^2 \approx mean(g^2)$
@@ -134,13 +135,13 @@ $$\hat{Y(t)} = \frac{\hat{Y(t)}}{1 - decacy^t}$$
 
 **Back to `Adam`**
 $$
-\begin{split}
+\begin{aligned}
 m_t &= \beta_1 m_{t-1} + (1 - \beta_1)g_t &\approx E(g)\\
 v(t) &= \beta_2 * v_{t-1} + (1 - \beta_2) * g^2 &\approx E(g^2) \\
 \hat m_t &= \frac{m_t}{1 - \beta_1^t} \\
 \hat v_t &= \frac{v_t}{1 - \beta_2^t} \\
 w_{t+1} &\leftarrow w_t - \eta \frac{\hat m_t}{\sqrt{\hat v_t + \epsilon}}
-\end{split}
+\end{aligned}
 $$
 
 - $\eta$ is intial learning rate
@@ -157,7 +158,7 @@ $$
 <br>
 <br>
 
-## [Choosing Hyper-parameters](#Choosing-Hyper-parameters)
+## Choosing Hyper-parameters
 Until now, known hyper-parameters to choose:
 
 - learning rate, decay rate
@@ -166,19 +167,19 @@ Until now, known hyper-parameters to choose:
 - hidden layer size
 - number of hiddern layer
 
-### [Grid Search](#Grid-Search)
+### Grid Search
 
-### [Random Search](#Random-Search)
+### Random Search
 Sampling Logarithmically
 
-## [Weight Initialization](#Weight-Initialization)
-### [Vanishing and Exploding Gradients](#Vanishing-and-Exploding-Gradients)
+## Weight Initialization
+### Vanishing and Exploding Gradients
 - In general, the deeper the network is, the better performance model would have. 
 - If we use `Sigmoid` as the activation function, we would find the max derivative of sigmoid is 0.25, and after multiplying the gradients using chain rule several times, the gradient will soon become 0, which is the so called `Gradients Vanishing`, and the model can't further learn under this circumanstance.
 <br>
 
 
-### [Weight Initialization](#Weight-Initialization)
+### Weight Initialization
 - First, initializing all w to 0 or constant is a bad idea in NN. (You can try yourself based on `sigmoid` or `tanh` as the activation function)
 - Initializing **randomly and small**. (divided by sqrt(D) is also recommended)
 - Initializing w too large would give you steep gradient, which would cause `NaNs`
@@ -219,15 +220,15 @@ W = np.random.randn(M1, M2) * np.sqrt(var)
 For bias terms, it doesn't matter we initialize to 0 or random. Remember we mostlly care about breaking symmetry so that our model could learn meaningful things.
 
 
-### [Local Minimum](#Local-Minimum)
+### Local Minimum
 - Why are we unlikely to be at a real minimuum?
 - Suppose we have 1 million dimensions, we have 2 choices for each dimension if derivative is 0: **min or max**
 - The probability of being at a real minimum in all 1 million dimension is: $0.5^{1,000,000}$!!!
 
-### [TensorFlow basis](#TensorFlow-basis)
+### TensorFlow basis
 - sessions, intializing variables...
 
-#### [Tips of improving TensorFlow famaliarity](#Tips-of-improving-TensorFlow-famaliarity)
+#### Tips of improving TensorFlow famaliarity
 
 - Use TF to build linear regression, logistic regression, ANN
 - Build any model based on the general framework of using gradient descent w.r.t model parameters
@@ -240,9 +241,9 @@ For bias terms, it doesn't matter we initialize to 0 or random. Remember we most
 
 <br><br>
 
-## [Modern-Regularization-Techniques](#Modern-Regularization-Techniques)
+## Modern-Regularization-Techniques
 
-### [Dropout](#Dropout)
+### Dropout
 **Ensemble:**
 
 - Train a group of prediction models, then average their predictions (regression) or take the majority vote (classification)
@@ -268,7 +269,7 @@ For bias terms, it doesn't matter we initialize to 0 or random. Remember we most
 		
 **Code implementation: `dropout_tensorflow.py`**
 
-#### [Dropout Intuition](#Dropout-Intuition)
+#### Dropout Intuition
 How does multiplying by p(keep) emulate an ensemble of NN where p(drop) = 1 - p(keep)?
 
 Suppose we have a simple NN (maybe we can't even call it NN):
@@ -284,7 +285,7 @@ Suppose we have a simple NN (maybe we can't even call it NN):
 	- $Output = (1*2/3) * 1 + (1*2/3) * 1 + (1*2/3) * 1 = 2$
 <br>
 
-### [Noise Injection](#Noise-Injection)
+### Noise Injection
 Without noise injection
 
 `train(X, Y)`
@@ -303,7 +304,7 @@ We can also add noise to weights:
 
 `Y = f(X; W + noise)`; $noise \sim \mathcal N(0, \sigma^2)$, $\sigma$ is small noise variance
 
-### [Summary of Dropout](#Summary-of-Dropout)
+### Summary of Dropout
 - 2 different (structures) models in training and testing
 - Train: randomly drop nodes (use p(keep) in implementation)
 - Test: multiply each layer's input by p(keep)
@@ -313,16 +314,16 @@ We can also add noise to weights:
 - It emulates ensemble
 <br><br> 
 
-## [Batch Normalization](#Batch-Normalization)
+## Batch Normalization
 Recall: We usually normalize our data before using ML models, i.e. `X = (X - mean) / std_dev`
 
 Now instead doing the normalization just at the beginning, we would like to do this at each layer!
 
-### [Exponentially-smoothed averages](#Exponentially-smoothed-averages)
+### Exponentially-smoothed averages
 
-Problem: Suppose you have so much data $X_1, ... X_n$, which can't fit into memory all at the same time, then how to calculate the sample mean?
+**Problem**: Suppose you have so much data $X_1, ... X_n$, which can't fit into memory all at the same time, then how to calculate the sample mean?
 
-Solution:
+**Solution**:
 
 - Read data on the fly and delete each data point after we saw it:
 $$\bar{X_N} = \frac{1}{N}\sum_{i=1}^N X_i = \frac{1}{N}\left((N - 1)\bar{X_{N-1}}+ X_N\right) = (1 - \frac1N) \bar{X_{N-1}} + \frac1N X_N$$
@@ -336,11 +337,90 @@ $$Y(t) = (1 - \frac1t)Y(t-1) + \frac1t X(t)$$
 What if we make $\alpha(t) = constant, 0<\alpha<1$, then:
 
 $$Y(t) = (1 - \alpha)Y(t-1) + \alpha X(t)$$
-This is the Exponentially-smoothed average if we express Y(t) only in terms of X:
+This is the **Exponentially-smoothed** average if we express Y(t) only in terms of X:
 $$Y(t) = (1 - \alpha)^tY(0) + \alpha \sum_{\tau = 0}^{t-1}(1 - \alpha)^{\tau}X(t - \tau)$$
 So, do we still get the mean? (assuming X distribution will not change over time)
 $$E[Y(t)] = (1 - \alpha)E[Y(t-1)] + \alpha E[X(t)] = (1 - \alpha)E[X] + \alpha E[X] = E[X]$$
 
-**`Exponentially-smoothed average` is also known as `Low pass filter`**, because the high frequency changes has been filtered out.
+**`Exponentially-smoothed average` is also known as `Low pass filter`**, because the high frequency changes has been filtered out. As you could see, for Exponentially-smoothed average, **most recent values matter more**, so if X is not stationary (distribution changes over time), then this actually may be a better way to estimate the mean.
 <br>
+<br>
+
+### Batch Normalization Theory
+- Recall for many ML algorithms, we like to normalize the input data before training: $z = \frac{(X - \mu)}{\sigma}$
+- With batch norm, we do normalization at every layer of the neural net. We do normalization **before** activation function
+- During training, we consider a small batch of data for each gradient descent step:
+$$\begin{aligned}
+X_B &= next\ batch\ of\ data \\
+\mu_B &= mean(X_B) \\
+\sigma_B &= std(X_B) = \sqrt{var(X_B)}\\
+Y_B &= (X_B - \mu_B) / \sigma_B \ (not\ exact\ correct) \\
+Y_B &= \frac{(X_B - \mu_B)}{\sqrt{\sigma_B^2 + \epsilon}}
+\end{aligned}
+$$
+- Only applies during training, since only then will we have batches (**we'll do something else for testing**)
+
+**Naming convention:** Here, we refer to the input to batch norm as `X`, and its output as `Y` (In general, `Y` is the target in machine learning scenario)
+
+**Counter-Intuitive Step:**
+
+- After the above normalization step, we also change its scale and location:
+$$\begin{aligned}
+\hat{X_B} &= \frac{X_B - \mu_B}{\sqrt{\sigma_B^2 + \epsilon}} \\
+Y &= \gamma \hat{X_B} + \beta
+\end{aligned}
+$$
+- Why do we "un-standardize" the data after standardizing it?
+	- Standardization may not be good(we don't know), so let gradient descent figure out what's best by updateing $\gamma, \beta$
+	- Suppose standardization is good, then $\gamma=1, \beta=0$,
+	- if not good, $\gamma, \beta$ should be whatever minimizes our loss function
+
+**How to do prediction on testset:**
+
+- keep tracking of "global mean" and "global variance" during training, and subtract those from test samples
+- Here, we use `exponentially-smoothed average` for this:
+
+for each batch B:
+$$\begin{aligned}
+\mu &= decay * \mu + (1 - decay) * \mu_B \\
+\sigma^2 &= decacy * \sigma^2 + (1 - decay) * \sigma^2
+\end{aligned}
+$$
+
+Theoretically, you could just use $\mu = mean(X_{train}), \sigma^2 = var(X_{train})$, **but it may not scale**
+
+So, during test time:
+
+$\mu, \sigma^2$ are collected during training
+$$\begin{aligned}
+\hat{X}_{test} &= \frac{X_{test} - \mu}{\sqrt{\sigma^2 + \epsilon}} \\
+Y_{test} &= \gamma \hat{X}_{test} + \beta
+\end{aligned}
+$$
+
+**Why doest batch normalization actually help?**
+
+- It could accelerate deep NN training by reducing `internal covariate shift`(distribution of input features can change during triaining, so that weights will have to adjust to compensate, which will increase training time)
+- It also acts as a regularizer, since inputes won't take on extreme values, neither the weights!
+<br>
+
+### Noise Perspective
+How does batch norm perform regularization
+
+- Think of it as a kind of `noise injection` (discussed earlier)
+- We use batch statistics: $\mu_B, \sigma_B$, we don't know the true values $\mu_{True}, \sigma_{True}$
+- One way to think of any estimate:
+	- Estimate = True value + Noise:
+$$\begin{aligned}
+ \mu_B &= \mu_{True} + \epsilon \\
+ \sigma_B &= \sigma_{True} + \epsilon
+\end{aligned}
+$$
+
+
+
+
+
+
+
 

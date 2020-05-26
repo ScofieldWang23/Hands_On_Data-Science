@@ -65,7 +65,7 @@ x &= A^{-1}b \\
 (X^TX)w &= X^Ty \\
 w &= (X^TX)^{-1}X^Ty \\\\
 Ax = b \rightarrow x = np.linalg.solve(A,b) \\
-w = (X^TX)^{-1}y \rightarrow x = np.linalg.solve(X^TX),\ X^Ty)
+w = (X^TX)^{-1}y \rightarrow x = np.linalg.solve((X^TX),\ X^Ty)
 \end{split}
 $$
 
