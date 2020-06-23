@@ -401,11 +401,12 @@ $$
 **Why doest batch normalization actually help?**
 
 - It could accelerate deep NN training by reducing `internal covariate shift`(distribution of input features can change during triaining, so that weights will have to adjust to compensate, which will increase training time)
-- It also acts as a regularizer, since inputes won't take on extreme values, neither the weights!
+- It also acts as a **regularizer**, since inputes won't take on extreme values, neither the weights! 
+  
 <br>
 
 ### Noise Perspective
-How does batch norm perform regularization
+How does batch norm perform **regularization**
 
 - Think of it as a kind of `noise injection` (discussed earlier)
 - We use batch statistics: $\mu_B, \sigma_B$, we don't know the true values $\mu_{True}, \sigma_{True}$

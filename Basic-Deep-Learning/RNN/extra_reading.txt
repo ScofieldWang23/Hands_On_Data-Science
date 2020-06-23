@@ -1,2 +1,8 @@
 Empirical Evaluation of Gated Recurrent Neural Networks on Sequence Modeling, Chung 2014
 https://arxiv.org/pdf/1412.3555v1.pdf
+
+On the Practical Computational Power of Finite Precision RNNs for Language Recognition
+https://arxiv.org/abs/1805.04908
+
+Massive Exploration of Neural Machine Translation Architectures
+https://arxiv.org/abs/1703.03906
