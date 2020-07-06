@@ -7,55 +7,54 @@ import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
 
 import sys
-sys.path.append(os.path.abspath('..'))
+# sys.path.append(os.path.abspath('..'))
 
-from util import get_wiki, find_analogies
-from brown import get_text_with_word2idx_limit_vocab, get_text_with_word2idx
+from utils import get_wiki, find_analogies
+from brown import get_sentences_with_word2idx_limit_vocab as get_brown
+# from brown import get_sentences_with_word2idx as get_brown
 
-# using ALS (Alternating Least Squares), what's the least # files to get correct analogies?
-# use this for word2vec training to make it faster
-# first tried 20 files --> not enough
-# how about 30 files --> some correct but still not enough
-# 40 files --> half right but 50 is better
 
 class Glove:
     def __init__(self, V, D, context_size):
-        '''
-        V: int, vocabulary size
+        """[summary]
 
-        D: int, number of dimension
+        Args:
+            V (int): vocabulary size
+            D (int): number of dimension
+            context_size (int): number of words to consider in each side of the center word
 
-        '''
+        """
         self.V = V
         self.D = D
         self.context_size = context_size
 
-    def train(self, sentences, cc_matrix=None, 
+    # fit
+    def fit(self, sentences, cc_matrix=None, 
             learning_rate=1e-4, reg=0.1, xmax=100, 
-            alpha=0.75, epochs=10, use_gd=False):
-        '''
-        sentences:
+            alpha=0.75, epochs=10, use_gd=False, max_num_sentence=None):
+        """[summary]
 
-        cc_matrix: string, path to load the calculated cc_matrix
+        Args:
+            sentences (list): a list of sentences in word_idx
+            cc_matrix (string, optional): path to load the calculated cc_matrix. Defaults to None.
+            learning_rate (float, optional): Defaults to 1e-4.
+            reg (float, optional): regularization lambda. Defaults to 0.1.
+            xmax (int, optional): max word count. Defaults to 100.
+            alpha (float, optional): Defaults to 0.75.
+            epochs (int, optional): Defaults to 10.
+            use_gd (bool, optional): indicate whether using gradient descent to train the model,
+                                     if False, use ALS() to train the model. Defaults to False.
+            max_num_sentence (int, optional): max number of sentence to use, set the limit would speed up training
+                                              Defaults to None. 300000
 
-        reg:
-
-        xmax:
-
-        alpha: 
-
-        use_gd: bool, default is False, indicate whether using gradient descent to train the model
-                if False, use ALS() to train the model
-
-        ''' 
+        """
         # build co-occurrence matrix
         # paper calls it X, so we will call it X, instead of calling the training data X
-        # TODO: would it be better to use a sparse matrix to store X?
+        # TODO: would it be better to use a sparse matrix to store X? 
 
         t0 = time()
         V = self.V
         D = self.D
-
         # sentences is only used to create cc_matrix
         # we will not use sentences later
         if not os.path.exists(cc_matrix):
@@ -86,14 +85,16 @@ class Glove:
 
                     # make sure "start" and "end" tokens are part of some context
                     # otherwise their f(X) will be 0, which will appear in denominator in bias update)
-                    # start token 0
+
+                    # corner case: start/end token
+                    # start token 0 is part of the context
                     if i - self.context_size < 0:
-                        points = 1.0 / (i + 1) # ?
+                        points = 1.0 / (i + 1) # context distance
                         X[wi, 0] += points
                         X[0, wi] += points
-                    # end token 1
-                    if i + self.context_sz > n_word:
-                        points = 1.0 / (n_word - i) # ?
+                    # end token 1 is part of the context
+                    if i + self.context_size > n_word:
+                        points = 1.0 / (n_word - i) # context distance
                         X[wi, 1] += points
                         X[1, wi] += points
 
@@ -126,8 +127,8 @@ class Glove:
         print("max in f(X): ", fX.max())
 
         # target
-        logX = np.log(X + 1) # +1 is important, logX is a matrix
-        print("max in log(X): ", logX.max())
+        logX = np.log(X + 1) # +1 is important, logX is a matrix “X(i, j)”
+        print(f"max in log(X): {logX.max()}")
         print("time to build co-occurrence matrix: ", (time() - t0))
 
         # initialize weights
@@ -135,8 +136,7 @@ class Glove:
         U = np.random.randn(V, D) / np.sqrt(V + D)
         b = np.zeros(V)
         c = np.zeros(V)
-        mu = logX.mean() # this is optional
-
+        mu = logX.mean() # this is optional, no need to be updated
 
         losses = []
         sentence_indexes = range(len(sentences))
@@ -152,6 +152,7 @@ class Glove:
 
             if use_gd: # gradient descent method
                 # shape of both W and U are: (V, D)
+
                 # update W
                 # oldW = W.copy()
                 for i in range(V):
@@ -165,7 +166,7 @@ class Glove:
 
                 # update b
                 for i in range(V):
-                    b[i] -= learning_rate * fX[i,:].dot(delta[i,:])
+                    b[i] -= learning_rate * fX[i,:].dot(delta[i,:]) # (V,).dot(1,V)
                 # b -= learning_rate * reg * b
 
                 # update c, similar to b
@@ -177,7 +178,7 @@ class Glove:
             else: # ALS method
                 # update W
                 for i in range(V):
-                    matrix = reg * np.eye(D) + (fX[i, :] * U.T).dot(U)
+                    matrix = reg * np.eye(D) + (fX[i, :] * U.T).dot(U) # (D,D) + ((1,V) * (D,V)).dot(V,D)
                     vector = (fX[i, :] * (logX[i, :] - b[i] - c - mu)).dot(U)
                     W[i] = np.linalg.solve(matrix, vector) 
 
@@ -222,15 +223,19 @@ class Glove:
         np.savez(os.path.join(save_dir, glove_file), *arrays)
 
 
-def test_model(save_dir, glove_file, word2idx_file, use_brown=True, n_files=100):
+def test_model(save_dir, glove_file, word2idx_file, use_brown=True):# n_files=100
     if use_brown:
         cc_matrix = "cc_matrix_brown.npy"
     else:
-        cc_matrix = "cc_matrix_%s.npy" % n_files
-
+        # cc_matrix = "cc_matrix_%s.npy" % n_files
+        cc_matrix = "cc_matrix_wiki.npy"
+    cc_matrix = os.path.join(save_dir, cc_matrix)
     # hacky way of checking if we need to re-load the raw data or not
     # remember, only the co-occurrence matrix is needed for training!
-    if os.path.exists(os.path.join(save_dir, cc_matrix)):
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    if os.path.exists(os.path.join(save_dir, word2idx_file)): # cc_matrix
         with open(os.path.join(save_dir, word2idx_file)) as f:
             word2idx = json.load(f)
         sentences = [] # dummy - we won't actually use it
@@ -245,10 +250,9 @@ def test_model(save_dir, glove_file, word2idx_file, use_brown=True, n_files=100)
                 'january', 'february', 'march', 'april', 'may', 'july', 'august',
                 'september', 'october',
             ])
-            sentences, word2idx = get_text_with_word2idx_limit_vocab(n_vocab=5000, keep_words=keep_words)
+            sentences, word2idx = get_brown(n_vocab=5000, keep_words=keep_words)
         else:
-            sentences, word2idx = get_wiki()
-            # get_wikipedia_data(n_files=n_files, n_vocab=2000)
+            sentences, word2idx = get_wiki(Vocab=5000)
         
         # save the word2idx
         with open(os.path.join(save_dir, word2idx_file), 'w') as f:
@@ -259,34 +263,37 @@ def test_model(save_dir, glove_file, word2idx_file, use_brown=True, n_files=100)
     model = Glove(Vocab_size, D=100, context_size=10)
 
     # alternating least squares method
-    model.train(sentences, cc_matrix=cc_matrix, epochs=20)
+    model.fit(sentences, cc_matrix=cc_matrix, epochs=10)
 
     # # gradient descent method
-    # model.train(
+    # model.fit(
     #     sentences,
     #     cc_matrix=cc_matrix,
     #     learning_rate=5e-4,
     #     reg=0.1,
-    #     epochs=500,
+    #     epochs=100,
     #     use_gd=True,
     # )
     model.save(save_dir, glove_file)
 
 
 if __name__ == '__main__':
-    save_dir = os.path.join(os.getcwd(), 'we_model')
-    glove_file = 'glove_model_50.npz'
-    word2idx_file = 'glove_word2idx_50.json'
+    save_dir = os.path.join(os.getcwd(), 'Basic-NLP/NLP_with_DL/w2v_model')
+    glove_file = 'glove_model_wiki.npz'
+    word2idx_file = 'glove_word2idx_wiki.json'
+    test_model(save_dir, glove_file, word2idx_file, use_brown=False)
+
     # glove_file = 'glove_model_brown.npz'
     # word2idx = 'glove_word2idx_brown.json'
-
-    test_model(save_dir, glove_file, word2idx_file, use_brown=False)
+    # test_model(save_dir, glove_file, word2idx_file, use_brown=False)
     
     # load back embeddings
+    glove_file = os.path.join(save_dir, glove_file)
     npz = np.load(glove_file)
     W1 = npz['arr_0']
     W2 = npz['arr_1']
 
+    word2idx_file = os.path.join(save_dir, word2idx_file)
     with open(word2idx_file) as f:
         word2idx = json.load(f)
         idx2word = {i:w for w,i in word2idx.items()}

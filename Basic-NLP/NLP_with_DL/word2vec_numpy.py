@@ -14,39 +14,44 @@ from sklearn.utils import shuffle
 from sklearn.metrics.pairwise import pairwise_distances
 
 from utils import get_wiki
-# from brown import get_text_with_word2idx as get_brown
-from brown import get_text_with_word2idx_limit_vocab as get_brown
+# from brown import get_sentences_with_word2idx as get_brown
+# from brown import get_sentences_with_word2idx_limit_vocab as get_brown
 
-
+import pandas as pd
 
 class Word2Vec:
     def __init__(self):
-        '''
-
-        '''
         # get the data
-        self.sentences, self.word2idx = get_wiki() # get_brown() takes much less time
+        self.sentences, self.word2idx = get_wiki(Vocab=5000) # get_brown() takes much less time
         self.vocab_size = len(self.word2idx)
         self.idx2word = {i:w for w, i in self.word2idx.items()}
 
 
     def get_context(self, position, sentence):
-        '''
+        """
         input:
         a sentence of the form: x x x x c c c pos c c c x x x x
         
         output:
         the context word indices: c c c c c c
 
-        '''
+        Args:
+            position (int): index of the center word
+            sentence (list): a list of idx of a sentence
+
+        Returns:
+            list: a list of the context word indices
+
+        """
         start = max(0, position - self.window_size)
         end  = min(len(sentence), position + self.window_size)
 
         context = []
-        for ctx_pos, ctx_word_idx in enumerate(sentence[start:end], start=start):
+        for ctx_pos, ctx_word_idx in enumerate(sentence[start: end], start=start): # don't forget start 
             # don't include the input word itself as a target
             if ctx_pos != position:
                 context.append(ctx_word_idx)
+
         return context 
 
 
@@ -54,10 +59,12 @@ class Word2Vec:
         """
         Pn(w) = prob of word occuring
         we would like to sample the negative samples in such a way 
-        that words occurring more often should be sampled more often
+        that frequent words should not be sampled too frequently
+        while rare words should be sampled more often than they should be
 
         """
-        word_freq = np.ones(self.vocab_size) # word_id --> count, zeros()
+        # use np.array, fast, easy for broadcasting
+        word_freq = np.ones(self.vocab_size) # word_id --> count, zeros() is also ok
         # word_count = sum(len(sentence) for sentence in self.sentences)
         for sentence in self.sentences:
             for word in sentence:
@@ -73,46 +80,68 @@ class Word2Vec:
 
 
     def sgd(self, word_id, targets, y):
-        '''
-        W[word_id] shape: D, just for a single center word, so it's D!
-        V[:,targets] shape: D x n, n: number of context words, e.g. 5
+        """
+        W1[word_id] shape: D, just for a single center word, so it's D!
+        W2[:, targets] shape: D x n, n: number of context words, e.g. 5
         activation shape: n
 
-        W: (Vocab_size, D), e.g. (8000, 100)
-        V: (D, Vocab_size), e.g. (100, 8000)
+        W1: (Vocab_size, D), e.g. (8000, 100) W
+        W2: (D, Vocab_size), e.g. (100, 8000) V
 
-        word_id: int, index of one word
+        Args:
+            word_id (int): index of one word
+            targets (list): indices of context words
+            y (int): 1 or 0 --> represents positive or negative word/sample
 
-        targets: list, indices of context words
+        Returns:
+            loss (float): value of loss function
 
-        y: int, 1 or 0 --> represents positive or negative word/sample
-
-        '''
+        """
         # print("word_id:", word_id, "targets:", targets)
-        activation = self.W[word_id].dot(self.V[:,targets]) # also known as logits
+        activation = self.W1[word_id].dot(self.W2[:, targets]) # also known as logits, shape: (1, n)
         prob = sigmoid(activation) # shape: (n,) n context words
 
         # update gradients of relevant part of V and W
-        gV = np.outer(self.W[word_id], prob - y) # outer product: D x n, label is just a int scalar values
-        gW = np.sum((prob - y) * self.V[:,targets], axis=1) # sum(n * (D,n), axis=1), apply sum on each row --> D
+        gW2 = np.outer(self.W1[word_id], prob - y) # outer product: D x n, label is just a list of int scalar values
+        gW1 = np.sum((prob - y) * self.W2[:, targets], axis=1) # sum(n * (D, n), axis=1), apply sum on each row --> D
 
-        self.V[:,targets] -= self.lr_rate * gV # D x n
-        self.W[word_id] -= self.lr_rate * gW # D
+        self.W2[:, targets] -= self.lr_rate * gW2 # D x n
+        self.W1[word_id] -= self.lr_rate * gW1 # 1 x D
 
         # return loss (binary cross entropy)
         # add 1e-10 to avoid 0
-        loss = -(y * np.log(prob + 1e-10) + (1 - y) * np.log(1 - prob + 1e-10))
+        loss = -( y * np.log(prob + 1e-10) + (1 - y) * np.log(1 - prob + 1e-10) )
         return loss.sum()
     
     
     def train(self, save_path, window_size=5, lr_rate=0.025, 
               num_negatives=5, epochs=20, hidden_size=50, 
               embedding_option='first', show_loss_plot=True):
-        '''
-        embedding_option: string, 'first' means use the first input-to-hidden weight matrix(vocab_size, D) as final embeddings
-                                  'average' means use the average of W and V.T as final embeddings
+        """
 
-        '''
+        Args:
+            save_path (str): path to save the trained word vectors
+
+            window_size (int, optional): number of words on each side of the center word. Defaults to 5.
+
+            lr_rate (float, optional): learning rate. Defaults to 0.025.
+
+            num_negatives (int, optional): number of negative samples to consider. Defaults to 5.
+
+            epochs (int, optional): Defaults to 20.
+
+            hidden_size (int, optional): number of embedding size. Defaults to 50.
+
+            embedding_option (str, optional): 'first' means use the first input-to-hidden weight matrix(vocab_size, D) as final embeddings. 
+                                              'average' means use the average of W and V.T as final embeddings
+                                               Defaults to 'first'.
+
+            show_loss_plot (bool, optional): control whether to show the loss plot. Defaults to True.
+
+        Returns:
+            [type]: [description]
+
+        """
         self.window_size = window_size
         self.lr_rate = lr_rate
         self.final_lr_rate = 0.0001
@@ -124,8 +153,8 @@ class Word2Vec:
         self.lr_rate_delta = (lr_rate - self.final_lr_rate) / epochs
 
         # params initialization
-        self.W = np.random.randn(self.vocab_size, self.D) # input-to-hidden
-        self.V = np.random.randn(self.D, self.vocab_size) # hidden-to-output
+        self.W1 = np.random.randn(self.vocab_size, self.D) # input-to-hidden
+        self.W2 = np.random.randn(self.D, self.vocab_size) # hidden-to-output
 
         # distribution for drawing negative samples
         p_neg = self.get_negative_sampling_distribution()
@@ -139,7 +168,7 @@ class Word2Vec:
 
         # for subsampling each sentence, drop frequent words while keep rare words
         threshold = 1e-5
-        # p_drop is propotional to p_neg
+        # p_drop is inversely propotional to p_neg
         p_drop = 1 - np.sqrt(threshold / p_neg)
 
         # train the model, very slow if using wiki data
@@ -152,12 +181,11 @@ class Word2Vec:
             counter = 0
             t0 = time()
             for sentence in self.sentences:
-                # keep only certain words based on p_neg == randomly drop some words in the sentence
+                # keep only certain words based on p_neg <--> randomly drop some words in the sentence
                 # e.g. the bigger p_drop[w] is, the smaller (1 - p_drop[w]) would be
                 # the more likely w would be dropped
-                sentence = [w for w in sentence \
-                                if np.random.random() < (1 - p_drop[w])
-                ]
+                sentence = [w for w in sentence if np.random.random() < (1 - p_drop[w])]
+                
                 if len(sentence) < 2: # less than 2 words meaning no context word!
                     continue
 
@@ -202,9 +230,9 @@ class Word2Vec:
 
         # get the fianl word emebddings!
         if embedding_option == 'first':
-            self.wv = self.W
+            self.wv = self.W1
         else:
-            self.wv = (self.W + self.V.T) / 2
+            self.wv = (self.W1 + self.W2.T) / 2
 
         if show_loss_plot:
             plt.plot(self.losses)
@@ -224,9 +252,7 @@ class Word2Vec:
 
 
     def analogy(self, pos1, neg1, pos2, neg2):
-        '''
-
-        '''
+        
         N, D = self.W.shape
         assert(N == self.vocab_size)
 
@@ -264,9 +290,7 @@ class Word2Vec:
 
 
 def load_model(dir):
-    '''
-
-    '''
+    
     with open('%s/word2idx.json' % dir) as f:
         word2idx = json.load(f)
 
@@ -275,15 +299,15 @@ def load_model(dir):
     return word2idx, wv
 
 
-def test_model(save_path):
+def test_model(save_path, epochs=20):
     '''
     there are multiple ways to get the "final" word embedding
-        1. We = (W + V.T) / 2
-        2. We = W
+        1. We = (W1 + W2.T) / 2
+        2. We = W1
 
     '''
     w2v_model = Word2Vec()
-    w2v_model.train(epochs=20, save_path=save_path)
+    w2v_model.train(epochs=epochs, save_path=save_path)
     
     print("**********")
     w2v_model.analogy('king', 'man', 'queen', 'woman')
@@ -292,5 +316,5 @@ def test_model(save_path):
 if __name__ == "__main__":
     # idx_text, fword2idx = get_brown()
     path = os.path.join(os.getcwd(), 'w2v_model')
-    test_model(save_path=path)
+    test_model(save_path=path, epochs=5)
     
